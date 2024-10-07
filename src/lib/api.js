@@ -1,10 +1,38 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:3000/api' // Replace with your actual API URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 })
+
+// Add an interceptor for handling errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      toast.error(`Error: ${error.response.data.message || 'An unexpected error occurred'}`)
+    } else if (error.request) {
+      // The request was made but no response was received
+      toast.error('No response received from server')
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      toast.error('Error setting up the request')
+    }
+    return Promise.reject(error)
+  }
+)
+
+// Add authentication token to requests
+const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  } else {
+    delete api.defaults.headers.common['Authorization']
+  }
+}
 
 export async function fetchTeamMembers(page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc', filter = '') {
   const response = await api.get('/team-members', {
@@ -86,6 +114,7 @@ export async function deleteRegistryEntry(registryId, entryId) {
   await api.delete(`/registries/${registryId}/entries/${entryId}`)
 }
 
+// Update file upload function
 export async function uploadFile(file) {
   const formData = new FormData()
   formData.append('file', file)
@@ -94,3 +123,18 @@ export async function uploadFile(file) {
   })
   return response.data.url
 }
+
+// Add a function to handle login
+export async function login(credentials) {
+  const response = await api.post('/auth/login', credentials)
+  const { token } = response.data
+  setAuthToken(token)
+  return response.data
+}
+
+// Add a function to handle logout
+export function logout() {
+  setAuthToken(null)
+}
+
+export { setAuthToken }

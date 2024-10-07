@@ -8,6 +8,7 @@ import { fetchTeamMembers, deleteTeamMember } from "@/lib/api"
 import { Pagination } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export function TeamMemberList() {
   const [page, setPage] = useState(1)
@@ -18,11 +19,13 @@ export function TeamMemberList() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
 
+  const debouncedFilter = useDebounce(filter, 300)
+
   const queryClient = useQueryClient()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['teamMembers', page, limit, sortBy, sortOrder, filter],
-    queryFn: () => fetchTeamMembers(page, limit, sortBy, sortOrder, filter),
+    queryKey: ['teamMembers', page, limit, sortBy, sortOrder, debouncedFilter],
+    queryFn: () => fetchTeamMembers(page, limit, sortBy, sortOrder, debouncedFilter),
   })
 
   const deleteMutation = useMutation({
@@ -30,9 +33,6 @@ export function TeamMemberList() {
     onSuccess: () => {
       queryClient.invalidateQueries(['teamMembers'])
       toast.success('Team member deleted successfully')
-    },
-    onError: (error) => {
-      toast.error(`Error deleting team member: ${error.message}`)
     },
   })
 
