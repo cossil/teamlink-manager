@@ -2,11 +2,14 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { createField, updateField } from "@/lib/api"
+import { toast } from "sonner"
 
 const fieldSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -16,12 +19,13 @@ const fieldSchema = z.object({
   defaultValue: z.string().optional(),
 })
 
-export function FieldForm({ onClose }) {
+export function FieldForm({ onClose, editingField }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const queryClient = useQueryClient()
 
   const form = useForm({
     resolver: zodResolver(fieldSchema),
-    defaultValues: {
+    defaultValues: editingField || {
       name: "",
       label: "",
       type: "text",
@@ -30,12 +34,26 @@ export function FieldForm({ onClose }) {
     },
   })
 
+  const mutation = useMutation({
+    mutationFn: editingField ? updateField : createField,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['fields'])
+      toast.success(`Field ${editingField ? 'updated' : 'created'} successfully`)
+      onClose()
+    },
+    onError: (error) => {
+      toast.error(`Error ${editingField ? 'updating' : 'creating'} field: ${error.message}`)
+    },
+  })
+
   async function onSubmit(data) {
     setIsSubmitting(true)
-    // TODO: Implement API call to save field
-    console.log(data)
+    if (editingField) {
+      mutation.mutate({ id: editingField.id, ...data })
+    } else {
+      mutation.mutate(data)
+    }
     setIsSubmitting(false)
-    onClose()
   }
 
   return (
@@ -125,7 +143,7 @@ export function FieldForm({ onClose }) {
           )}
         />
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Field"}
+          {isSubmitting ? "Saving..." : `${editingField ? 'Update' : 'Save'} Field`}
         </Button>
       </form>
     </Form>

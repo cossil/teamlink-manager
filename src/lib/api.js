@@ -1,36 +1,96 @@
-// Mock data
-const teamMembers = [
-  { id: 1, name: "John Doe", role: "Developer", age: 30 },
-  { id: 2, name: "Jane Smith", role: "Designer", age: 28 },
-  { id: 3, name: "Mike Johnson", role: "Manager", age: 35 },
-]
+import axios from 'axios'
 
-const fields = [
-  { id: 1, name: "email", label: "Email Address", type: "email", required: true },
-  { id: 2, name: "phone", label: "Phone Number", type: "phone", required: false },
-  { id: 3, name: "department", label: "Department", type: "dropdown", required: true },
-]
+const API_BASE_URL = 'http://localhost:3000/api' // Replace with your actual API URL
 
-const registries = [
-  { id: 1, name: "Roles", entriesCount: 3 },
-  { id: 2, name: "Departments", entriesCount: 5 },
-]
+const api = axios.create({
+  baseURL: API_BASE_URL,
+})
 
-// Mock API functions
-export async function fetchTeamMembers() {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(teamMembers), 500)
+export async function fetchTeamMembers(page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc', filter = '') {
+  const response = await api.get('/team-members', {
+    params: { page, limit, sortBy, sortOrder, filter },
   })
+  return response.data
+}
+
+export async function createTeamMember(data) {
+  const response = await api.post('/team-members', data)
+  return response.data
+}
+
+export async function updateTeamMember(id, data) {
+  const response = await api.put(`/team-members/${id}`, data)
+  return response.data
+}
+
+export async function deleteTeamMember(id) {
+  await api.delete(`/team-members/${id}`)
 }
 
 export async function fetchFields() {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(fields), 500)
-  })
+  const response = await api.get('/fields')
+  return response.data
+}
+
+export async function createField(data) {
+  const response = await api.post('/fields', data)
+  return response.data
+}
+
+export async function updateField(id, data) {
+  const response = await api.put(`/fields/${id}`, data)
+  return response.data
+}
+
+export async function deleteField(id) {
+  await api.delete(`/fields/${id}`)
 }
 
 export async function fetchRegistries() {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(registries), 500)
+  const response = await api.get('/registries')
+  return response.data
+}
+
+export async function createRegistry(data) {
+  const response = await api.post('/registries', data)
+  return response.data
+}
+
+export async function updateRegistry(id, data) {
+  const response = await api.put(`/registries/${id}`, data)
+  return response.data
+}
+
+export async function deleteRegistry(id) {
+  await api.delete(`/registries/${id}`)
+}
+
+export async function fetchRegistryEntries(registryId, page = 1, limit = 10) {
+  const response = await api.get(`/registries/${registryId}/entries`, {
+    params: { page, limit },
   })
+  return response.data
+}
+
+export async function createRegistryEntry(registryId, data) {
+  const response = await api.post(`/registries/${registryId}/entries`, data)
+  return response.data
+}
+
+export async function updateRegistryEntry(registryId, entryId, data) {
+  const response = await api.put(`/registries/${registryId}/entries/${entryId}`, data)
+  return response.data
+}
+
+export async function deleteRegistryEntry(registryId, entryId) {
+  await api.delete(`/registries/${registryId}/entries/${entryId}`)
+}
+
+export async function uploadFile(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data.url
 }
